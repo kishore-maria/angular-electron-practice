@@ -1,0 +1,535 @@
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" 
+     xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
+  <!-- http://wixtoolset.org/documentation/manual/v3/xsd/wix/product.html -->
+  <Product Id="1EC1EF5C-8396-4699-8161-21AC5628E5C9" 
+           UpgradeCode="a75742d0-3672-4f55-9db3-a9b3863d2f36"
+           Name = "angular-electron-practice (Machine - MSI)"
+           Version="1.0.0.0"
+           Manufacturer="Josh software"
+           Language="1033">
+    <!-- Only run this installer on Windows 7 or up (or if it"s already installed, I guess) -->
+    <!-- <Condition Message="This application is only supported on Windows 7 or higher.">
+      <![CDATA[Installed OR (VersionNT >= 601)]]>
+    </Condition> -->
+    <!-- http://wixtoolset.org/documentation/manual/v3/xsd/wix/package.html -->
+    <Package InstallerVersion="405"
+             Compressed="yes"
+             Comments="Windows Installer Package"
+             Platform="x86"
+             InstallScope="perMachine"/>
+    <!-- Don't allow downgrades -->
+    <MajorUpgrade AllowSameVersionUpgrades="yes" DowngradeErrorMessage="A later version of this product is already installed. Setup will now exit."/>
+    <!-- This will hide our Uninstall entry in Apps & Features. We doing this so
+    we can write our own which we can better control. -->
+    <Property Id="ARPSYSTEMCOMPONENT" Value="1" />
+    <!-- While the MSI package is hidden in Apps & Features, it can still be queried
+    via PowerShell and other means. To differentiate we give the public entry a slightly
+    different name to make admins life easier.  -->
+    <Property Id="VisibleProductName" Value="angular-electron-practice (Machine)" />
+    <!-- Tells the package to install perUser or perMachine. In case of perUser, all
+    files will be redirected to the user profile and all registry entries to HKCU. -->
+    <Property Id="MSIINSTALLPERUSER" Secure="yes" Value="0" />
+    <!-- Overides the default install mode. It solves a problem where
+    individual packaged files that have the same version as in previous
+    installed App version will be deleted if the files are in use during
+    this upgrade. Unfortunately this causes an ICE 40 warning during linking. -->
+    <Property Id="REINSTALLMODE" Value="emus" />
+    <!-- Overrides the default reboot behavior if files are in use during the upgrade.
+    By default, this will be set to "ReallySuppress" to make sure no unexpected reboot will happpen.-->
+    <Property Id="REBOOT" Value="ReallySuppress" />
+    <!-- Installlation level to use that determines which features are installed.
+    see guides/enduser.md to check which Install Level maps to which feature that will
+    correspondingly get installed.
+    If not set, this will default to "2" (Main Feature, Launch On Login) -->
+    <Property Id="INSTALLLEVEL" Value="2" />
+    <!-- Allows to customize the Windows user group that gets access rights on
+    the install folder in cas the auto-updater is installed. User that run the App
+    must be part of that user group to be able to auto-update. -->
+    <Property Id="UPDATERUSERGROUP" Value="Users" />
+    <!-- A property to define whether the auto-updater is enabled when the
+    feature gets installed. This way the update can be installed but also be disabled
+    by overwriting the default value.  -->
+    <Property Id="AUTOUPDATEENABLED" Value="1" />
+    <!-- Necessary registry search to find the install path which is used by the
+    PurgeOnUninstall action. Since this package can be installed perUser or perMachine,
+    we have to look in both places. First successful search wins. -->
+    <Property Id="INSTALLPATH">
+      <RegistrySearch Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq"
+                      Root="HKCU" 
+                      Type="raw"
+                      Id="INSTALLPATH_REGSEARCH_HKCU"
+                      Name="InstallPath"
+                      Win64="no"/>
+      <RegistrySearch Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq"
+                      Root="HKLM" 
+                      Type="raw"
+                      Id="INSTALLPATH_REGSEARCH_HKLM"
+                      Name="InstallPath"
+                      Win64="no"/>
+    </Property>
+    <!-- Lets change the product name depending on the perUser installMode. 
+    This way the user and admins can see in which scope the MSI was installed. -->
+    <SetProperty Action="SetVisibleProductName" Id="VisibleProductName" Sequence="both" Before="AppSearch"  Value="angular-electron-practice (User)">
+      <![CDATA[MSIINSTALLPERUSER = "1"]]>
+    </SetProperty>
+    <!-- Again we give thee MSI generaten entry a slightly different name to help 
+    differentiate between the public one and the invisible one. -->
+    <SetProperty Action="SetProductName" Id="ProductName" Sequence="both" Before="AppSearch"  Value="angular-electron-practice (User - MSI)">
+      <![CDATA[MSIINSTALLPERUSER = "1"]]>
+    </SetProperty>
+
+    <Media Id="1" Cabinet="product.cab" EmbedCab="yes"/>
+
+    <UI Id="UserInterface">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+      <Property Id="WixUI_Mode" Value="FeatureTree" />
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999">1</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="CustomizeDlg">NOT Installed</Publish>
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">Installed AND PATCH</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="1">Installed</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">NOT Installed</Publish>
+      <Publish Dialog="CustomizeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="CustomizeDlg" Order="1">NOT Installed OR WixUI_InstallMode = "Change"</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2">Installed AND NOT PATCH</Publish>
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="3">Installed AND PATCH</Publish>
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="CustomizeDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg">1</Publish>
+    </UI>
+    <UIRef Id="WixUI_Common" />
+
+
+    <!-- Step 2: Add files and directories -->
+    <Directory Id="TARGETDIR" Name="SourceDir">
+       <!-- Installation files to %PROGRAMFILES% -->
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="APPLICATIONROOTDIRECTORY" Name="angular-electron-practice">
+          <Directory Id="__03c0ed41_a9ad_4ee2_a40f_03da718fc11b" Name="app-1.0.0">
+            <Directory Id="_locales_d81e1cd7_f2b8_4fa2_a058_9a7487724f61" Name="locales">
+              <Component Id="_locales_af.pak_02304cae_090c_4ac9_95bc_d1de52e6877b" Guid="7a790517-41d4-4b81-8e2b-b844ffe0e3ee" Win64="no">
+                <File Name="af.pak" Id="_locales_af.pak_02304cae_090c_4ac9_95bc_d1de52e6877b" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\af.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_am.pak_e9c7606b_511c_4a33_bf3d_e48c3f967eda" Guid="fdc12abc-c297-4b7c-8fb6-cc90c5478e1b" Win64="no">
+                <File Name="am.pak" Id="_locales_am.pak_e9c7606b_511c_4a33_bf3d_e48c3f967eda" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\am.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ar.pak_30cecf18_b2a8_4284_9508_8ff74cac2bea" Guid="ec66129c-c2e2-4e43-83e1-fe7785b800d7" Win64="no">
+                <File Name="ar.pak" Id="_locales_ar.pak_30cecf18_b2a8_4284_9508_8ff74cac2bea" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ar.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_bg.pak_e246399b_ec0d_40ae_8580_6e565cea7efa" Guid="a7b950d6-351b-4426-a457-50661f5c8b0e" Win64="no">
+                <File Name="bg.pak" Id="_locales_bg.pak_e246399b_ec0d_40ae_8580_6e565cea7efa" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\bg.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_bn.pak_00e0be1a_d482_4d85_99be_91e22422e88c" Guid="2131dc06-5973-4994-af86-712e8113032d" Win64="no">
+                <File Name="bn.pak" Id="_locales_bn.pak_00e0be1a_d482_4d85_99be_91e22422e88c" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\bn.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ca.pak_2733e570_a2a5_4572_9597_7a7aa7bb9783" Guid="00dadb5a-cc8b-4e77-bc53-855b0c78cbed" Win64="no">
+                <File Name="ca.pak" Id="_locales_ca.pak_2733e570_a2a5_4572_9597_7a7aa7bb9783" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ca.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_cs.pak_c02ac3ee_39c1_4526_8e5a_8f4e3143de9e" Guid="c8b8a439-f949-4d00-b41f-2b69a04d10a9" Win64="no">
+                <File Name="cs.pak" Id="_locales_cs.pak_c02ac3ee_39c1_4526_8e5a_8f4e3143de9e" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\cs.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_da.pak_39fa968e_9d78_4f7e_b7ca_1ebcc3ea6029" Guid="b7d3061b-7d70-46e4-81d9-614c36fb1014" Win64="no">
+                <File Name="da.pak" Id="_locales_da.pak_39fa968e_9d78_4f7e_b7ca_1ebcc3ea6029" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\da.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_de.pak_68991139_2015_4836_9518_9aa556f6e1ca" Guid="37e77ab6-d760-44c0-9280-8a7884811091" Win64="no">
+                <File Name="de.pak" Id="_locales_de.pak_68991139_2015_4836_9518_9aa556f6e1ca" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\de.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_el.pak_9717cf13_1cfc_4922_972b_3d4066b524b1" Guid="ba47fbe5-7c60-49ed-ac0e-23c3e506b05c" Win64="no">
+                <File Name="el.pak" Id="_locales_el.pak_9717cf13_1cfc_4922_972b_3d4066b524b1" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\el.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_en_GB.pak_7d65b9ea_aa4b_44bc_b023_e69a07767679" Guid="9f2697c0-7f7e-4485-ad04-bd59691d3336" Win64="no">
+                <File Name="en-GB.pak" Id="_locales_en_GB.pak_7d65b9ea_aa4b_44bc_b023_e69a07767679" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\en-GB.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_en_US.pak_5dc527be_38ea_4013_afa8_d49d2f45ae70" Guid="fbfa3fb8-1990-482a-b6b2-bfa99116201e" Win64="no">
+                <File Name="en-US.pak" Id="_locales_en_US.pak_5dc527be_38ea_4013_afa8_d49d2f45ae70" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\en-US.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_es_419.pak_47fcd32b_e432_4a7c_a9ee_c570fc8d7ffb" Guid="2099bdff-0f76-445a-b628-df155ea1a943" Win64="no">
+                <File Name="es-419.pak" Id="_locales_es_419.pak_47fcd32b_e432_4a7c_a9ee_c570fc8d7ffb" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\es-419.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_es.pak_932630e9_20a3_445f_8a01_b406b0804513" Guid="b62750e5-ce6b-4896-aaab-9fbcbd35e422" Win64="no">
+                <File Name="es.pak" Id="_locales_es.pak_932630e9_20a3_445f_8a01_b406b0804513" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\es.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_et.pak_2dc9c5b0_9ec0_4ea9_8ecd_f7f276434218" Guid="c2ee061c-de23-4ef9-a33e-ab8dbc48e698" Win64="no">
+                <File Name="et.pak" Id="_locales_et.pak_2dc9c5b0_9ec0_4ea9_8ecd_f7f276434218" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\et.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fa.pak_9cb55ab4_7e26_497d_bf00_00195782c0c6" Guid="5759a070-7763-404c-89d3-ab27ae99d41b" Win64="no">
+                <File Name="fa.pak" Id="_locales_fa.pak_9cb55ab4_7e26_497d_bf00_00195782c0c6" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\fa.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fi.pak_20314f64_3e98_4f12_8615_6b0ae0b163ba" Guid="3b5359f0-70f7-4c07-84a3-1bd35dc6e359" Win64="no">
+                <File Name="fi.pak" Id="_locales_fi.pak_20314f64_3e98_4f12_8615_6b0ae0b163ba" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\fi.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fil.pak_b64a37c5_936e_4033_a1eb_df99fbf8a6ef" Guid="c2af912a-04d3-4790-90b7-a6ef9a492da4" Win64="no">
+                <File Name="fil.pak" Id="_locales_fil.pak_b64a37c5_936e_4033_a1eb_df99fbf8a6ef" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\fil.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_fr.pak_e5ad76df_db50_4678_9112_8c3732d9913d" Guid="1c0f9d9c-30ba-4cee-91fd-95e0bb5d34c2" Win64="no">
+                <File Name="fr.pak" Id="_locales_fr.pak_e5ad76df_db50_4678_9112_8c3732d9913d" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\fr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_gu.pak_1cc20c6b_b0a2_4236_98e9_094020c31665" Guid="3dc80b12-6eb4-4193-959c-de0d367c6197" Win64="no">
+                <File Name="gu.pak" Id="_locales_gu.pak_1cc20c6b_b0a2_4236_98e9_094020c31665" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\gu.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_he.pak_f93003b1_e3f5_491e_8685_744498781ec4" Guid="142d7c5e-293d-438a-8367-d3361d259dc6" Win64="no">
+                <File Name="he.pak" Id="_locales_he.pak_f93003b1_e3f5_491e_8685_744498781ec4" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\he.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_hi.pak_852d2aa9_a78e_44d6_81b3_871abb158c4c" Guid="41306bb3-ae13-4655-a1fd-5cdd99054d99" Win64="no">
+                <File Name="hi.pak" Id="_locales_hi.pak_852d2aa9_a78e_44d6_81b3_871abb158c4c" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\hi.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_hr.pak_4e1a36ca_b8c0_4762_b7e8_9414bf412a7f" Guid="fc364b0b-9968-4598-91c5-b615db06d2b0" Win64="no">
+                <File Name="hr.pak" Id="_locales_hr.pak_4e1a36ca_b8c0_4762_b7e8_9414bf412a7f" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\hr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_hu.pak_93c50db0_93fa_462c_ac26_6dad86ba3522" Guid="f88dd3fd-501f-4898-941b-f543de24bfd3" Win64="no">
+                <File Name="hu.pak" Id="_locales_hu.pak_93c50db0_93fa_462c_ac26_6dad86ba3522" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\hu.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_id.pak_af7eb8aa_8d5c_4157_b6fe_f01a1796fabc" Guid="7f6747b3-88c8-488c-9008-38de3df2b7db" Win64="no">
+                <File Name="id.pak" Id="_locales_id.pak_af7eb8aa_8d5c_4157_b6fe_f01a1796fabc" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\id.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_it.pak_d79f3217_f6d1_48fa_9c4d_591f7154e82c" Guid="903a5690-9916-41f6-a9c3-ed4fdfbf83d0" Win64="no">
+                <File Name="it.pak" Id="_locales_it.pak_d79f3217_f6d1_48fa_9c4d_591f7154e82c" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\it.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ja.pak_846becb8_0f53_4b9e_b425_24731fa52d60" Guid="6f1f0d8d-08d4-4752-9e99-b1dc95896f49" Win64="no">
+                <File Name="ja.pak" Id="_locales_ja.pak_846becb8_0f53_4b9e_b425_24731fa52d60" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ja.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_kn.pak_3bf7e890_aa99_4768_a992_004f1f00bdc7" Guid="1b4c98bd-0364-49ae-9e3e-fb5c71f1704f" Win64="no">
+                <File Name="kn.pak" Id="_locales_kn.pak_3bf7e890_aa99_4768_a992_004f1f00bdc7" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\kn.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ko.pak_0e9c69f0_11b5_4611_9ebd_c41523cbd387" Guid="8997c6a1-c838-4e5a-9cf8-fb59748b7636" Win64="no">
+                <File Name="ko.pak" Id="_locales_ko.pak_0e9c69f0_11b5_4611_9ebd_c41523cbd387" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ko.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_lt.pak_9085e348_9c47_40b1_b267_49f9b06add9e" Guid="4aaf5de7-9101-492f-8322-f6bc296938c3" Win64="no">
+                <File Name="lt.pak" Id="_locales_lt.pak_9085e348_9c47_40b1_b267_49f9b06add9e" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\lt.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_lv.pak_37db020e_9cfa_4a5a_bc48_ecd78cdf5864" Guid="7090773d-b9bf-4938-aef8-6d4c3ff19d10" Win64="no">
+                <File Name="lv.pak" Id="_locales_lv.pak_37db020e_9cfa_4a5a_bc48_ecd78cdf5864" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\lv.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ml.pak_45e131dd_f77e_4eca_993f_083f38019a41" Guid="6e2df746-6203-40c7-9577-e0f7d2e691ed" Win64="no">
+                <File Name="ml.pak" Id="_locales_ml.pak_45e131dd_f77e_4eca_993f_083f38019a41" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ml.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_mr.pak_10a8782f_ad4c_44b9_b2cd_ecd2411f5eba" Guid="bf54df76-013d-4b87-8a8a-7eeb5ab520a8" Win64="no">
+                <File Name="mr.pak" Id="_locales_mr.pak_10a8782f_ad4c_44b9_b2cd_ecd2411f5eba" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\mr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ms.pak_b35662b0_676f_4bc5_8da7_323651a11468" Guid="e695a2d6-6b63-4fae-a7e3-dcdc93a9f89b" Win64="no">
+                <File Name="ms.pak" Id="_locales_ms.pak_b35662b0_676f_4bc5_8da7_323651a11468" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ms.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_nb.pak_6adba641_c831_4b56_ae0d_c86a9755b94d" Guid="7e876742-7423-4c16-acfb-6be2452e58bc" Win64="no">
+                <File Name="nb.pak" Id="_locales_nb.pak_6adba641_c831_4b56_ae0d_c86a9755b94d" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\nb.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_nl.pak_69f9eeda_a6f3_454a_b97b_4730c94982c3" Guid="3ac4ccee-d149-41f4-a324-87e3268449c3" Win64="no">
+                <File Name="nl.pak" Id="_locales_nl.pak_69f9eeda_a6f3_454a_b97b_4730c94982c3" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\nl.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_pl.pak_77799734_0be3_4628_87bf_24640d043e22" Guid="8a0636c6-36ee-4eee-bd6e-439aaf7a1797" Win64="no">
+                <File Name="pl.pak" Id="_locales_pl.pak_77799734_0be3_4628_87bf_24640d043e22" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\pl.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_pt_BR.pak_d41ee454_0399_432f_88db_4d521b802b27" Guid="156f7275-85fe-43a1-a02e-99cd219ba179" Win64="no">
+                <File Name="pt-BR.pak" Id="_locales_pt_BR.pak_d41ee454_0399_432f_88db_4d521b802b27" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\pt-BR.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_pt_PT.pak_2ffd1bf4_7319_47e5_864c_fedaa640a809" Guid="cea56d38-f12f-43eb-9fbe-5eea1cf7205a" Win64="no">
+                <File Name="pt-PT.pak" Id="_locales_pt_PT.pak_2ffd1bf4_7319_47e5_864c_fedaa640a809" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\pt-PT.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ro.pak_b612258d_d5c5_4d82_8901_c0a176d3b489" Guid="c36f46c6-78fb-43fa-bc78-3ded1a273606" Win64="no">
+                <File Name="ro.pak" Id="_locales_ro.pak_b612258d_d5c5_4d82_8901_c0a176d3b489" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ro.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ru.pak_2aa4408b_af79_432b_a117_3a06292f0f72" Guid="38e91cc5-e889-4d95-a0f2-561852773969" Win64="no">
+                <File Name="ru.pak" Id="_locales_ru.pak_2aa4408b_af79_432b_a117_3a06292f0f72" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ru.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sk.pak_c2dc9521_e741_41a2_b2e7_58e7c5001faf" Guid="d10f7198-073d-49f2-9cd2-87e5d51461bf" Win64="no">
+                <File Name="sk.pak" Id="_locales_sk.pak_c2dc9521_e741_41a2_b2e7_58e7c5001faf" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\sk.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sl.pak_8feaccd7_4683_451f_8b0d_42714f5ce815" Guid="596bfff0-085d-471f-8fae-e5e2d3cc7399" Win64="no">
+                <File Name="sl.pak" Id="_locales_sl.pak_8feaccd7_4683_451f_8b0d_42714f5ce815" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\sl.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sr.pak_b8b4eb99_5c81_4829_a3a0_3d4f5b04978e" Guid="cb00c772-68c2-47b4-8db0-a0a214e3f0c8" Win64="no">
+                <File Name="sr.pak" Id="_locales_sr.pak_b8b4eb99_5c81_4829_a3a0_3d4f5b04978e" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\sr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sv.pak_109a85a6_b93a_4f0c_847c_a91e12bcbb34" Guid="0c3fe79b-0359-49fb-b174-36b3da308d02" Win64="no">
+                <File Name="sv.pak" Id="_locales_sv.pak_109a85a6_b93a_4f0c_847c_a91e12bcbb34" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\sv.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_sw.pak_25de8efa_92f3_42a5_a6d8_eefd35001078" Guid="df794ab6-d0c6-4ac4-bcde-3e66f90a2d2b" Win64="no">
+                <File Name="sw.pak" Id="_locales_sw.pak_25de8efa_92f3_42a5_a6d8_eefd35001078" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\sw.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ta.pak_974c6628_7776_41e0_9b70_8f4cd8cccd1c" Guid="24cdaa97-e2a2-4000-b7c9-9e39687ad6f1" Win64="no">
+                <File Name="ta.pak" Id="_locales_ta.pak_974c6628_7776_41e0_9b70_8f4cd8cccd1c" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ta.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_te.pak_7dadf1c8_1b59_40b7_8ec3_cc0ae6a268b1" Guid="4b1a51cf-ebfe-49af-9895-d2926c1e0fd3" Win64="no">
+                <File Name="te.pak" Id="_locales_te.pak_7dadf1c8_1b59_40b7_8ec3_cc0ae6a268b1" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\te.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_th.pak_ef22aecc_481f_424b_a973_d98024d686b0" Guid="3da7cf9e-3add-4aad-a13e-d9ed3c7e512b" Win64="no">
+                <File Name="th.pak" Id="_locales_th.pak_ef22aecc_481f_424b_a973_d98024d686b0" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\th.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_tr.pak_abf866ce_73d6_44f8_b871_d82658cc776f" Guid="d5641578-eb3c-4b87-9d01-235b253ec420" Win64="no">
+                <File Name="tr.pak" Id="_locales_tr.pak_abf866ce_73d6_44f8_b871_d82658cc776f" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\tr.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_uk.pak_2a916827_8906_48f5_846f_806c9b632650" Guid="9d9f0daf-d839-4b09-84d7-ea2257adcb80" Win64="no">
+                <File Name="uk.pak" Id="_locales_uk.pak_2a916827_8906_48f5_846f_806c9b632650" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\uk.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_ur.pak_4371112b_9b5d_485f_ab45_e6ae030ed532" Guid="65b3df00-52a2-4d04-a759-142d9287e763" Win64="no">
+                <File Name="ur.pak" Id="_locales_ur.pak_4371112b_9b5d_485f_ab45_e6ae030ed532" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\ur.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_vi.pak_387c6078_9213_48b8_bfb7_0a434572c6db" Guid="02707fc4-7f23-4033-bd29-a51486c8c42c" Win64="no">
+                <File Name="vi.pak" Id="_locales_vi.pak_387c6078_9213_48b8_bfb7_0a434572c6db" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\vi.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_zh_CN.pak_df165174_c7d3_4880_88cf_041e6ba827a6" Guid="6f02a34c-3645-47db-90af-9a0691f5b484" Win64="no">
+                <File Name="zh-CN.pak" Id="_locales_zh_CN.pak_df165174_c7d3_4880_88cf_041e6ba827a6" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\zh-CN.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+              <Component Id="_locales_zh_TW.pak_412d120e_6aea_4d86_9db4_8a1960dfad78" Guid="c6a9f927-6a56-42cb-87d7-33074527837d" Win64="no">
+                <File Name="zh-TW.pak" Id="_locales_zh_TW.pak_412d120e_6aea_4d86_9db4_8a1960dfad78" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\locales\zh-TW.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+            </Directory>
+            <Directory Id="_resources_e625de83_f797_45f7_a370_9ff73c301bfb" Name="resources">
+              <Component Id="_resources_app.asar_39a8a4fb_4039_48e5_a837_0dd406ddcabf" Guid="0519bd6b-5f13-4643-86c2-a5ef45f5d009" Win64="no">
+                <File Name="app.asar" Id="_resources_app.asar_39a8a4fb_4039_48e5_a837_0dd406ddcabf" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\resources\app.asar" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+              </Component>
+            </Directory>            <Component Id="_LICENSE_d40ce39c_bdfb_4181_9c51_09aa86e73052" Guid="e1c604fd-9209-43f5-81b2-33ae19f9723a" Win64="no">
+              <File Name="LICENSE" Id="_LICENSE_d40ce39c_bdfb_4181_9c51_09aa86e73052" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\LICENSE" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_LICENSES.chromium.html_12a790e4_2b52_4f0a_9987_68f52271b610" Guid="5d124f52-aacd-4968-a385-255f46105621" Win64="no">
+              <File Name="LICENSES.chromium.html" Id="_LICENSES.chromium.html_12a790e4_2b52_4f0a_9987_68f52271b610" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\LICENSES.chromium.html" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_angular_electron_practice.exe_c7465294_21de_4fb9_ba1c_89cd139cd0be" Guid="c0ce6511-a6ae-4b0e-a880-c5d41311a567" Win64="no">
+              <File Name="angular-electron-practice.exe" Id="_angular_electron_practice.exe_c7465294_21de_4fb9_ba1c_89cd139cd0be" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\angular-electron-practice.exe" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_chrome_100_percent.pak_a83b6811_6d44_4bfc_90ec_178b547c0286" Guid="dd3036b5-8cd5-4d90-a6bd-5e4fe7c70647" Win64="no">
+              <File Name="chrome_100_percent.pak" Id="_chrome_100_percent.pak_a83b6811_6d44_4bfc_90ec_178b547c0286" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\chrome_100_percent.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_chrome_200_percent.pak_b0b6f062_e1d2_4692_b8fe_8bc725fd2aad" Guid="efcff583-c59a-4876-bc03-dc3afdc11f5c" Win64="no">
+              <File Name="chrome_200_percent.pak" Id="_chrome_200_percent.pak_b0b6f062_e1d2_4692_b8fe_8bc725fd2aad" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\chrome_200_percent.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_d3dcompiler_47.dll_c00acbc7_0582_4568_a97b_1d573afbc694" Guid="d7dd820d-0e7b-4ceb-8223-677d69a837e3" Win64="no">
+              <File Name="d3dcompiler_47.dll" Id="_d3dcompiler_47.dll_c00acbc7_0582_4568_a97b_1d573afbc694" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\d3dcompiler_47.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_ffmpeg.dll_5f023d79_ab27_46c0_842c_8df54a14deaf" Guid="3addbac3-1e5f-4e10-b592-b5c8c9a37e66" Win64="no">
+              <File Name="ffmpeg.dll" Id="_ffmpeg.dll_5f023d79_ab27_46c0_842c_8df54a14deaf" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\ffmpeg.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_icudtl.dat_0af50021_36f2_4a76_91e8_07665071097c" Guid="d845f355-c1d3-474b-acf6-ae600b1d9f7c" Win64="no">
+              <File Name="icudtl.dat" Id="_icudtl.dat_0af50021_36f2_4a76_91e8_07665071097c" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\icudtl.dat" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_libEGL.dll_972e09dd_ade0_460b_99d9_ac62987852a0" Guid="f5c1f93a-7e3c-4592-b465-70397f5a8e95" Win64="no">
+              <File Name="libEGL.dll" Id="_libEGL.dll_972e09dd_ade0_460b_99d9_ac62987852a0" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\libEGL.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_libGLESv2.dll_d303af16_9095_4990_9d0d_ceb714958d5b" Guid="bb80ea80-76dd-4554-a836-83cfa917280c" Win64="no">
+              <File Name="libGLESv2.dll" Id="_libGLESv2.dll_d303af16_9095_4990_9d0d_ceb714958d5b" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\libGLESv2.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_resources.pak_d80cbfcb_4b3f_4d96_8a0a_0c591c710000" Guid="60481c0b-d122-4002-ada3-cffcb85af7b5" Win64="no">
+              <File Name="resources.pak" Id="_resources.pak_d80cbfcb_4b3f_4d96_8a0a_0c591c710000" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\resources.pak" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_snapshot_blob.bin_5f0caabe_d70d_4743_b289_60cd7bb202ca" Guid="b2cbc7f0-38e5-406e-a428-c77bfca33fb9" Win64="no">
+              <File Name="snapshot_blob.bin" Id="_snapshot_blob.bin_5f0caabe_d70d_4743_b289_60cd7bb202ca" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\snapshot_blob.bin" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_v8_context_snapshot.bin_83ebbdba_dcc8_4ba8_9e8f_f0ed7c7b44b1" Guid="bbabd15b-5bb9-43d7-8fca-0f5b4d91f75e" Win64="no">
+              <File Name="v8_context_snapshot.bin" Id="_v8_context_snapshot.bin_83ebbdba_dcc8_4ba8_9e8f_f0ed7c7b44b1" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\v8_context_snapshot.bin" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_version_307168d7_fda8_43b6_9e3d_ab9e0ee2ca6a" Guid="4d1a7a16-7f9f-44c8-9807-e0d878a7c8c3" Win64="no">
+              <File Name="version" Id="_version_307168d7_fda8_43b6_9e3d_ab9e0ee2ca6a" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\version" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_vk_swiftshader.dll_4cf5a3b1_0301_4d71_a58b_bf725d35e7e4" Guid="f2708530-fb12-4510-a49c-b3efe2c5f560" Win64="no">
+              <File Name="vk_swiftshader.dll" Id="_vk_swiftshader.dll_4cf5a3b1_0301_4d71_a58b_bf725d35e7e4" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\vk_swiftshader.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_vk_swiftshader_icd.json_95c79f89_8c9c_44b1_896f_b4115f35eae3" Guid="76a7f5a5-1abb-423b-a6b5-45edc58d0698" Win64="no">
+              <File Name="vk_swiftshader_icd.json" Id="_vk_swiftshader_icd.json_95c79f89_8c9c_44b1_896f_b4115f35eae3" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\vk_swiftshader_icd.json" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+            <Component Id="_vulkan_1.dll_c0cbbd82_5b33_40b0_9e61_4f2bc73863a0" Guid="e8d67ac7-a336-4e62-9833-9d8d762eb17f" Win64="no">
+              <File Name="vulkan-1.dll" Id="_vulkan_1.dll_c0cbbd82_5b33_40b0_9e61_4f2bc73863a0" Source="D:\Projects\angular-electron-practice\electron\output\angular-electron-practice-win32-x64\vulkan-1.dll" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+            </Component>
+          </Directory>
+          <Component Id="_angular_electron_practice.exe_42db61c3_2a55_477f_8315_ddedf0fc95b3" Guid="17425370-6c8d-484a-9891-c2202e7ce71c" Win64="no">
+            <File Name="angular-electron-practice.exe" Id="_angular_electron_practice.exe_42db61c3_2a55_477f_8315_ddedf0fc95b3" Source="C:\Users\Josh\AppData\Local\Temp\angular-electron-practice7FT1We\angular-electron-practice.exe" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+          </Component>
+          <Component Id="_.installInfo.json_b4f17374_7040_458d_bac5_bb8ad3902478" Guid="d1fc82a9-a5be-463d-9c81-312925dd615c" Win64="no">
+            <File Name=".installInfo.json" Id="_.installInfo.json_b4f17374_7040_458d_bac5_bb8ad3902478" Source="C:\Users\Josh\AppData\Local\Temp\.installInfoNyHHSV\.installInfo.json" KeyPath="yes" Checksum="yes" ProcessorArchitecture="x86"/>
+          </Component>
+          <Component Id="RegistryInstallPath" Guid="5a966136-8357-43f5-8b5f-18984adede5b" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="InstallPath" Type="string" Value="[APPLICATIONROOTDIRECTORY]" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallDisplayName" Guid="9ffb2755-b0b7-4e81-a062-448e0ae82dc3" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="DisplayName" Type="string" Value="[VisibleProductName]" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallPublisher" Guid="b575170a-1114-4a13-8457-11afef69470d" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="Publisher" Type="string" Value="Josh software" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallDisplayVersion" Guid="db54e805-75dc-4385-ab15-b68b63e733fc" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="DisplayVersion" Type="string" Value="1.0.0" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallModifyString" Guid="3c75c1f6-ade3-42f3-9c2b-a8a8b3c3bd04" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="ModifyPath" Type="expandable" Value="MsiExec.exe /I {1EC1EF5C-8396-4699-8161-21AC5628E5C9}" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallString" Guid="7d8d0525-cabc-47ca-9d58-44f77d7d5a6c" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="UninstallString" Type="expandable" Value="MsiExec.exe /X {1EC1EF5C-8396-4699-8161-21AC5628E5C9}" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+          <Component Id="UninstallDisplayIcon" Guid="a6d6689e-8be5-4e1c-8086-7b93a0658943" Win64="no">
+            <RegistryKey Root="HKMU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{1EC1EF5C-8396-4699-8161-21AC5628E5C9}.msq" ForceCreateOnInstall="no" ForceDeleteOnUninstall="yes">
+              <RegistryValue Name="DisplayIcon" Type="expandable" Value="[SystemFolder]msiexec.exe" KeyPath="yes"/>
+            </RegistryKey>
+          </Component>
+        </Directory>
+      </Directory>
+
+      <!-- Desktop -->
+      <Directory Id="DesktopFolder" Name="Desktop" />
+
+      <!-- Start Menu -->
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Josh software"/>
+      </Directory>
+    </Directory>
+
+    <!-- Step 3: Add app to Start Menu -->
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="ApplicationShortcut" Guid="d0d50b2e-4adf-4c3d-9f2b-3b91be74dc8a" Win64="no">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="angular-electron-practice"
+                  Description="This is a demo application"
+                  Target="[APPLICATIONROOTDIRECTORY]angular-electron-practice.exe"
+                  WorkingDirectory="APPLICATIONROOTDIRECTORY">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="com.squirrel.angular-electron-practice.angular-electron-practice"/>
+        </Shortcut>
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall"/>
+        <RegistryValue Root="HKCU"
+                       Key="Software\Microsoft\angular-electron-practice"
+                       Name="installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes"/>
+      </Component>
+    </DirectoryRef>
+
+   <!-- Step 4: Add app desktop shortcut --> 
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="1b79a96c-fbcf-4af0-86c1-fefb4dbc1132" >
+          <Shortcut Id="MyDesktopShortcut"
+                    Name="angular-electron-practice"
+                    Description="This is a demo application"
+                    Target="[APPLICATIONROOTDIRECTORY]angular-electron-practice.exe"
+                    WorkingDirectory="APPLICATIONROOTDIRECTORY"/>
+          <RegistryValue Root="HKCU"
+                    Key="Software\Microsoft\angular-electron-practice"
+                    Name="installed"
+                    Type="integer"
+                    Value="1"
+                    KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+
+    <!-- Lets cleanup any files that are were not part of the initial install
+    via this MSI. Such as newer versions installed by the auto-updater. -->
+    <DirectoryRef Id="APPLICATIONROOTDIRECTORY">
+      <Component Id="PurgeOnUninstall" Guid="a3a10145-99d5-42bb-ba9d-59cc25ee4743" Win64="no">
+        <CreateFolder/>
+        <util:RemoveFolderEx On="uninstall" Property="INSTALLPATH" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="Complete" Title="angular-electron-practice (1.0.0)" Description="The complete package." Display="expand" Level="1" ConfigurableDirectory="APPLICATIONROOTDIRECTORY">
+      <!-- Step 5: Tell WiX to install the files -->
+      <Feature Id="MainApplication" Title="Main Application" Level="1" Description="The main components to run the applications." >
+        <ComponentRef Id="_locales_af.pak_02304cae_090c_4ac9_95bc_d1de52e6877b" />
+        <ComponentRef Id="_locales_am.pak_e9c7606b_511c_4a33_bf3d_e48c3f967eda" />
+        <ComponentRef Id="_locales_ar.pak_30cecf18_b2a8_4284_9508_8ff74cac2bea" />
+        <ComponentRef Id="_locales_bg.pak_e246399b_ec0d_40ae_8580_6e565cea7efa" />
+        <ComponentRef Id="_locales_bn.pak_00e0be1a_d482_4d85_99be_91e22422e88c" />
+        <ComponentRef Id="_locales_ca.pak_2733e570_a2a5_4572_9597_7a7aa7bb9783" />
+        <ComponentRef Id="_locales_cs.pak_c02ac3ee_39c1_4526_8e5a_8f4e3143de9e" />
+        <ComponentRef Id="_locales_da.pak_39fa968e_9d78_4f7e_b7ca_1ebcc3ea6029" />
+        <ComponentRef Id="_locales_de.pak_68991139_2015_4836_9518_9aa556f6e1ca" />
+        <ComponentRef Id="_locales_el.pak_9717cf13_1cfc_4922_972b_3d4066b524b1" />
+        <ComponentRef Id="_locales_en_GB.pak_7d65b9ea_aa4b_44bc_b023_e69a07767679" />
+        <ComponentRef Id="_locales_en_US.pak_5dc527be_38ea_4013_afa8_d49d2f45ae70" />
+        <ComponentRef Id="_locales_es_419.pak_47fcd32b_e432_4a7c_a9ee_c570fc8d7ffb" />
+        <ComponentRef Id="_locales_es.pak_932630e9_20a3_445f_8a01_b406b0804513" />
+        <ComponentRef Id="_locales_et.pak_2dc9c5b0_9ec0_4ea9_8ecd_f7f276434218" />
+        <ComponentRef Id="_locales_fa.pak_9cb55ab4_7e26_497d_bf00_00195782c0c6" />
+        <ComponentRef Id="_locales_fi.pak_20314f64_3e98_4f12_8615_6b0ae0b163ba" />
+        <ComponentRef Id="_locales_fil.pak_b64a37c5_936e_4033_a1eb_df99fbf8a6ef" />
+        <ComponentRef Id="_locales_fr.pak_e5ad76df_db50_4678_9112_8c3732d9913d" />
+        <ComponentRef Id="_locales_gu.pak_1cc20c6b_b0a2_4236_98e9_094020c31665" />
+        <ComponentRef Id="_locales_he.pak_f93003b1_e3f5_491e_8685_744498781ec4" />
+        <ComponentRef Id="_locales_hi.pak_852d2aa9_a78e_44d6_81b3_871abb158c4c" />
+        <ComponentRef Id="_locales_hr.pak_4e1a36ca_b8c0_4762_b7e8_9414bf412a7f" />
+        <ComponentRef Id="_locales_hu.pak_93c50db0_93fa_462c_ac26_6dad86ba3522" />
+        <ComponentRef Id="_locales_id.pak_af7eb8aa_8d5c_4157_b6fe_f01a1796fabc" />
+        <ComponentRef Id="_locales_it.pak_d79f3217_f6d1_48fa_9c4d_591f7154e82c" />
+        <ComponentRef Id="_locales_ja.pak_846becb8_0f53_4b9e_b425_24731fa52d60" />
+        <ComponentRef Id="_locales_kn.pak_3bf7e890_aa99_4768_a992_004f1f00bdc7" />
+        <ComponentRef Id="_locales_ko.pak_0e9c69f0_11b5_4611_9ebd_c41523cbd387" />
+        <ComponentRef Id="_locales_lt.pak_9085e348_9c47_40b1_b267_49f9b06add9e" />
+        <ComponentRef Id="_locales_lv.pak_37db020e_9cfa_4a5a_bc48_ecd78cdf5864" />
+        <ComponentRef Id="_locales_ml.pak_45e131dd_f77e_4eca_993f_083f38019a41" />
+        <ComponentRef Id="_locales_mr.pak_10a8782f_ad4c_44b9_b2cd_ecd2411f5eba" />
+        <ComponentRef Id="_locales_ms.pak_b35662b0_676f_4bc5_8da7_323651a11468" />
+        <ComponentRef Id="_locales_nb.pak_6adba641_c831_4b56_ae0d_c86a9755b94d" />
+        <ComponentRef Id="_locales_nl.pak_69f9eeda_a6f3_454a_b97b_4730c94982c3" />
+        <ComponentRef Id="_locales_pl.pak_77799734_0be3_4628_87bf_24640d043e22" />
+        <ComponentRef Id="_locales_pt_BR.pak_d41ee454_0399_432f_88db_4d521b802b27" />
+        <ComponentRef Id="_locales_pt_PT.pak_2ffd1bf4_7319_47e5_864c_fedaa640a809" />
+        <ComponentRef Id="_locales_ro.pak_b612258d_d5c5_4d82_8901_c0a176d3b489" />
+        <ComponentRef Id="_locales_ru.pak_2aa4408b_af79_432b_a117_3a06292f0f72" />
+        <ComponentRef Id="_locales_sk.pak_c2dc9521_e741_41a2_b2e7_58e7c5001faf" />
+        <ComponentRef Id="_locales_sl.pak_8feaccd7_4683_451f_8b0d_42714f5ce815" />
+        <ComponentRef Id="_locales_sr.pak_b8b4eb99_5c81_4829_a3a0_3d4f5b04978e" />
+        <ComponentRef Id="_locales_sv.pak_109a85a6_b93a_4f0c_847c_a91e12bcbb34" />
+        <ComponentRef Id="_locales_sw.pak_25de8efa_92f3_42a5_a6d8_eefd35001078" />
+        <ComponentRef Id="_locales_ta.pak_974c6628_7776_41e0_9b70_8f4cd8cccd1c" />
+        <ComponentRef Id="_locales_te.pak_7dadf1c8_1b59_40b7_8ec3_cc0ae6a268b1" />
+        <ComponentRef Id="_locales_th.pak_ef22aecc_481f_424b_a973_d98024d686b0" />
+        <ComponentRef Id="_locales_tr.pak_abf866ce_73d6_44f8_b871_d82658cc776f" />
+        <ComponentRef Id="_locales_uk.pak_2a916827_8906_48f5_846f_806c9b632650" />
+        <ComponentRef Id="_locales_ur.pak_4371112b_9b5d_485f_ab45_e6ae030ed532" />
+        <ComponentRef Id="_locales_vi.pak_387c6078_9213_48b8_bfb7_0a434572c6db" />
+        <ComponentRef Id="_locales_zh_CN.pak_df165174_c7d3_4880_88cf_041e6ba827a6" />
+        <ComponentRef Id="_locales_zh_TW.pak_412d120e_6aea_4d86_9db4_8a1960dfad78" />
+        <ComponentRef Id="_resources_app.asar_39a8a4fb_4039_48e5_a837_0dd406ddcabf" />
+        <ComponentRef Id="_LICENSE_d40ce39c_bdfb_4181_9c51_09aa86e73052" />
+        <ComponentRef Id="_LICENSES.chromium.html_12a790e4_2b52_4f0a_9987_68f52271b610" />
+        <ComponentRef Id="_angular_electron_practice.exe_c7465294_21de_4fb9_ba1c_89cd139cd0be" />
+        <ComponentRef Id="_chrome_100_percent.pak_a83b6811_6d44_4bfc_90ec_178b547c0286" />
+        <ComponentRef Id="_chrome_200_percent.pak_b0b6f062_e1d2_4692_b8fe_8bc725fd2aad" />
+        <ComponentRef Id="_d3dcompiler_47.dll_c00acbc7_0582_4568_a97b_1d573afbc694" />
+        <ComponentRef Id="_ffmpeg.dll_5f023d79_ab27_46c0_842c_8df54a14deaf" />
+        <ComponentRef Id="_icudtl.dat_0af50021_36f2_4a76_91e8_07665071097c" />
+        <ComponentRef Id="_libEGL.dll_972e09dd_ade0_460b_99d9_ac62987852a0" />
+        <ComponentRef Id="_libGLESv2.dll_d303af16_9095_4990_9d0d_ceb714958d5b" />
+        <ComponentRef Id="_resources.pak_d80cbfcb_4b3f_4d96_8a0a_0c591c710000" />
+        <ComponentRef Id="_snapshot_blob.bin_5f0caabe_d70d_4743_b289_60cd7bb202ca" />
+        <ComponentRef Id="_v8_context_snapshot.bin_83ebbdba_dcc8_4ba8_9e8f_f0ed7c7b44b1" />
+        <ComponentRef Id="_version_307168d7_fda8_43b6_9e3d_ab9e0ee2ca6a" />
+        <ComponentRef Id="_vk_swiftshader.dll_4cf5a3b1_0301_4d71_a58b_bf725d35e7e4" />
+        <ComponentRef Id="_vk_swiftshader_icd.json_95c79f89_8c9c_44b1_896f_b4115f35eae3" />
+        <ComponentRef Id="_vulkan_1.dll_c0cbbd82_5b33_40b0_9e61_4f2bc73863a0" />
+        <ComponentRef Id="_angular_electron_practice.exe_42db61c3_2a55_477f_8315_ddedf0fc95b3" />
+        <ComponentRef Id="_.installInfo.json_b4f17374_7040_458d_bac5_bb8ad3902478" />
+        <ComponentRef Id="RegistryInstallPath" />
+        <ComponentRef Id="UninstallDisplayName" />
+        <ComponentRef Id="UninstallPublisher" />
+        <ComponentRef Id="UninstallDisplayVersion" />
+        <ComponentRef Id="UninstallModifyString" />
+        <ComponentRef Id="UninstallString" />
+        <ComponentRef Id="UninstallDisplayIcon" />
+        <ComponentRef Id="ApplicationShortcut" />
+        <ComponentRef Id="DesktopShortcut" />
+        <ComponentRef Id="PurgeOnUninstall" />
+      </Feature> 
+    </Feature> 
+  </Product>
+</Wix>

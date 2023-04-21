@@ -14,7 +14,9 @@
     }
   ],
   "publish": {
-    "provider": "github"
+    "provider": "github",
+    "owner": "kishore-maria",
+    "repo": "angular-electron-practice"
   },
   "nsis": {
     "allowElevation": true,
