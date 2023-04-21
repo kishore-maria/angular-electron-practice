@@ -1,0 +1,54 @@
+{
+  "name": "angular-electron-practice",
+  "version": "1.0.0",
+  "description": "An Amazing Capacitor App",
+  "author": {
+    "name": "",
+    "email": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "license": "MIT",
+  "main": "build/src/index.js",
+  "build": {
+    "win": {
+      "target": "squirrel",
+      "iconUrl": "assets/angular_icon.ico",
+      "msi": true
+    }
+  },
+  "scripts": {
+    "build": "tsc && electron-rebuild",
+    "electron:start-live": "node ./live-runner.js",
+    "electron:start": "npm run build && electron --inspect=5858 ./",
+    "electron:pack": "npm run build && electron-builder build --dir -c ./electron-builder.config.json",
+    "electron:make": "npm run build && electron-builder build -c ./electron-builder.config.json -p always",
+    "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --prune=true --out=release-builds",
+    "package-win": "electron-packager . angular-electron-practice --overwrite --asar=true --platform=win32 --arch=ia32 --icon=assets/angular_icon.ico --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Angular Electron App\"",
+    "package-linux": "electron-packager . electron-tutorial-app --overwrite --asar=true --platform=linux --arch=x64 --icon=assets/icons/png/1024x1024.png --prune=true --out=release-builds"
+  },
+  "dependencies": {
+    "@capacitor-community/electron": "^4.1.1",
+    "chokidar": "~3.5.3",
+    "electron-is-dev": "~2.0.0",
+    "electron-packager": "^17.1.1",
+    "electron-serve": "~1.1.0",
+    "electron-squirrel-startup": "^1.0.0",
+    "electron-unhandled": "~4.0.1",
+    "electron-updater": "~5.0.1",
+    "electron-window-state": "~5.0.3"
+  },
+  "devDependencies": {
+    "electron": "^19.0.0",
+    "electron-builder": "~22.14.13",
+    "electron-rebuild": "^3.2.7",
+    "electron-wix-msi": "^5.0.0",
+    "typescript": "~4.3.5"
+  },
+  "keywords": [
+    "capacitor",
+    "electron"
+  ]
+}

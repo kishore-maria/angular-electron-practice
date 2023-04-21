@@ -1,0 +1,6 @@
+version: 1.0.0
+files:
+  - url: https://www.google.com
+    sha512: 7add335a9e05021382816d0eef425129b3ac2edcc1faacf4d12ce70bd490ba04c43ce752eac6f8e3759988263f855a7661c2235caf7a466e0b685bbc50b00629
+    size: 148925952
+    updateTo: 1.0.0
