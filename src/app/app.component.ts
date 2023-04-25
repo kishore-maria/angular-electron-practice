@@ -7,4 +7,8 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'angular-electron-practice';
+
+  clickCheck() {
+    window.open('https://angular.io/tutorial')
+  }
 }

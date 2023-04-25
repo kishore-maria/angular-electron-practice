@@ -78,7 +78,7 @@ export class ElectronCapacitorApp {
 
     // Setup our web app loader, this lets us load apps like react, vue, and angular without changing their build chains.
     this.loadWebApp = electronServe({
-      directory: join(app.getAppPath(), 'app'),
+      directory: join(app.getAppPath(), '../dist'),
       scheme: this.customScheme,
     });
   }
@@ -99,7 +99,7 @@ export class ElectronCapacitorApp {
 
   async init(): Promise<void> {
     const icon = nativeImage.createFromPath(
-      join(app.getAppPath(), 'assets', process.platform === 'win32' ? 'appIcon.ico' : 'appIcon.png')
+      join(app.getAppPath(), './../../src/assets/images', process.platform === 'win32' ? 'appIcon.ico' : 'appIcon.png')
     );
     this.mainWindowState = windowStateKeeper({
       defaultWidth: 1000,
@@ -171,7 +171,7 @@ export class ElectronCapacitorApp {
       this.SplashScreen = new CapacitorSplashScreen({
         imageFilePath: join(
           app.getAppPath(),
-          'assets',
+          './../../src/assets/images',
           this.CapacitorFileConfig.electron?.splashScreenImageName ?? 'splash.png'
         ),
         windowWidth: 400,

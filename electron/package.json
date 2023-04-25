@@ -1,23 +1,33 @@
 {
   "name": "angular-electron-practice",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "An Amazing Capacitor App",
   "author": {
     "name": "",
     "email": ""
   },
-  "repository": {
-    "type": "git",
-    "url": ""
-  },
   "license": "MIT",
   "main": "build/src/index.js",
   "build": {
+    "appId": "com.kishore.angular-electron-practice",
+    "productName": "angular-electron-practice",
+    "directories": {
+      "buildResources": "resources",
+      "output": "output"
+    },
     "win": {
-      "target": "squirrel",
-      "iconUrl": "assets/angular_icon.ico",
-      "msi": true
+      "target": "nsis",
+      "icon": "./../src/assets/images/angular_icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "./../src/assets/images/angular_icon.ico"
     }
+  },
+  "repository": "https://github.com/kishore-maria/angular-electron-practice",
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
   },
   "scripts": {
     "build": "tsc && electron-rebuild",
@@ -41,9 +51,9 @@
     "electron-window-state": "~5.0.3"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.2.12",
     "electron": "^19.0.0",
     "electron-builder": "~22.14.13",
-    "electron-rebuild": "^3.2.7",
     "electron-wix-msi": "^5.0.0",
     "typescript": "~4.3.5"
   },

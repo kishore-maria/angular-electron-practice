@@ -1,33 +1,59 @@
 import type { CapacitorElectronConfig } from '@capacitor-community/electron';
 import { getCapacitorElectronConfig, setupElectronDeepLinking } from '@capacitor-community/electron';
-import type { MenuItemConstructorOptions } from 'electron';
-import { app, MenuItem } from 'electron';
+import { app, MenuItem, dialog, MenuItemConstructorOptions } from 'electron';
 import electronIsDev from 'electron-is-dev';
 import unhandled from 'electron-unhandled';
 import { autoUpdater } from 'electron-updater';
 
 import { ElectronCapacitorApp, setupContentSecurityPolicy, setupReloadWatcher } from './setup';
-import path from "path"
-import fs from "fs"
-// const feed = 'your_site/update/windows_64'
 
-let yaml = '';
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
 
-yaml += "provider: generic\n"
-// yaml += "url: D:/Projects/angular-electron-practice/update/windows_64\n"
-yaml += "useMultipleRangeRequest: false\n"
-yaml += "channel: latest\n"
-yaml += "updaterCacheDirName: " + app.getName()
-
-const update_file = [path.join(process.resourcesPath, 'app-update.yml'), yaml]
-const dev_update_file = [path.join(process.resourcesPath, 'dev-app-update.yml'), yaml]
-const chechFiles = [update_file, dev_update_file]
-
-for (let file of chechFiles) {
-    if (!fs.existsSync(file[0])) {
-        fs.writeFileSync(file[0], file[1]);
-    }
+const sendStatusToWindow = text => {
+  // log.info(text);
+  console.log(text);
+  // mainWindow.webContents.send('message', text);
 }
+
+autoUpdater.on('checking-for-update', () => {
+  sendStatusToWindow('Checking for update...');
+})
+autoUpdater.on('update-available', (info) => {
+  sendStatusToWindow('Update available.');
+})
+autoUpdater.on('update-not-available', (info) => {
+  sendStatusToWindow('Update not available.');
+})
+autoUpdater.on('error', (err) => {
+  sendStatusToWindow('Error in auto-updater.');
+})
+autoUpdater.on('download-progress', (progressObj) => {
+  sendStatusToWindow('Download progress...');
+})
+
+
+autoUpdater.on("update-available", () => {
+  // log.info("update-available");
+  const dialogOpts = {
+    type: "info",
+    buttons: ["Restart", "Later"],
+    title: "Application Update",
+    message: "update",
+    detail:
+      "A new version has been downloaded. Restart the application to apply the updates.",
+  };
+
+  dialog.showMessageBox(dialogOpts).then((returnValue) => {
+    if (returnValue.response === 0) autoUpdater.quitAndInstall();
+  });
+});
+
+autoUpdater.on("error", (e) => {
+  // dialog.showMessageBox(mainWindow, { message: (e as Error).message });
+  console.error("There was a problem updating the application");
+  console.error(e);
+});
 
 if (require('electron-squirrel-startup')) app.quit()
 // if first time install on windows, do not run application, rather
@@ -70,12 +96,11 @@ if (electronIsDev) {
 (async () => {
   // Wait for electron app to be ready.
   await app.whenReady();
+  autoUpdater.checkForUpdatesAndNotify();
   // Security - Set Content-Security-Policy based on whether or not we are in dev mode.
   setupContentSecurityPolicy(myCapacitorApp.getCustomURLScheme());
   // Initialize our app, build windows, and load content.
   await myCapacitorApp.init();
-  // Check for updates if we are in a packaged app.
-  autoUpdater.checkForUpdatesAndNotify();
 })();
 
 // Handle when all of our windows are close (platforms have their own expectations).

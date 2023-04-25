@@ -1,6 +1,12 @@
-version: 1.0.0
-files:
-  - url: https://www.google.com
-    sha512: 7add335a9e05021382816d0eef425129b3ac2edcc1faacf4d12ce70bd490ba04c43ce752eac6f8e3759988263f855a7661c2235caf7a466e0b685bbc50b00629
-    size: 148925952
-    updateTo: 1.0.0
+# version: 1.0.0
+# files:
+#   - url: https://github.com/kishore-maria/angular-electron-practice/blob/origin/develop/electron/windows_installer/angular-electron-practice.msi
+#     sha512: bfc463fc4e335fccff343458b3dc58d1f05218d76f8d7e776855628f82deba021ce63577e9e66aa1e951525da88c94fa54a513c759ff4128141073c0a2c185a2
+#     size: 97452032
+#     updateTo: 1.0.0
+
+provider: generic
+channel: latest
+builds:
+  - platform: win32
+    arch: x64

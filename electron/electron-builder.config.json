@@ -1,41 +1,17 @@
 {
-  "appId": "com.yourdoamnin.yourapp",
+  "appId": "com.kishore.angular-electron-practice",
   "directories": {
-    "buildResources": "resources"
+    "buildResources": "resources",
+    "output": "output"
   },
-  "files": [
-    "assets/**/*",
-    "build/**/*",
-    "capacitor.config.*",
-    "app/**/*",
-    {
-      "from": "myapp",
-      "to": "myapp"
-    }
-  ],
-  "publish": {
-    "provider": "github",
-    "owner": "kishore-maria",
-    "repo": "angular-electron-practice"
-  },
-  "nsis": {
-    "allowElevation": true,
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true
-  },
+  "productName": "Angular Electron Practice",
   "win": {
     "target": "nsis",
-    "icon": "assets/appIcon.ico"
+    "icon": "assets/angular_icon.ico"
   },
-  "msi": {
-    "shortcutFolderName": "MyApp",
-    "targetDir": "C:\\Program Files (x86)\\angular-electron-practice\\app-1.0.0",
-    "name": "MyApp",
-    "startMenuShortcutName": "MyApp",
-    "shortcutName": "MyApp"
-  },
-  "mac": {
-    "category": "your.app.category.type",
-    "target": "dmg"
+  "repository": "https://github.com/kishore-maria/angular-electron-practice",
+  "publish": {
+    "provider": "github",
+    "releaseType": "release"
   }
 }
